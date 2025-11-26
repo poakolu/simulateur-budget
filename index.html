@@ -1,39 +1,384 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Simulateur de dépenses mensuelles</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Assistant Rapport de Stage V2</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #10b981;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: var(--primary); margin-bottom: 5px; }
+
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+
+        .nav-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: none;
+            background: none;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: 600;
+            color: #6b7280;
+            transition: 0.2s;
+        }
+
+        .nav-btn:hover { background-color: #e5e7eb; }
+        .nav-btn.active { background-color: var(--primary); color: white; }
+
+        /* Content Area */
+        .content {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 500px;
+        }
+
+        .section { display: none; animation: fadeIn 0.3s; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .tip-box {
+            background-color: #e0f2fe;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            border-radius: 0 5px 5px 0;
+        }
+
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.9em; text-transform: uppercase; color: #4b5563; }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea { height: 120px; resize: vertical; }
+
+        /* Style spécifique pour le Journal */
+        .journal-entry-form {
+            background: #f8fafc;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .journal-list { margin-top: 20px; }
+        
+        .day-card {
+            background: white;
+            border-left: 4px solid var(--secondary);
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .day-card h4 { margin: 0 0 5px 0; color: var(--secondary); }
+        .photo-tag { 
+            display: inline-block; 
+            background: #fef3c7; 
+            color: #d97706; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-size: 0.8em; 
+            margin-top: 5px; 
+            font-weight: bold;
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 10px; right: 10px;
+            color: red; cursor: pointer; border: none; background: none; font-weight: bold;
+        }
+
+        /* Buttons */
+        .btn-add {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .action-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        #final-output {
+            white-space: pre-wrap;
+            background: #f9fafb;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            margin-top: 20px;
+            display: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Simulateur de dépenses mensuelles</h1>
 
-  <div>
-    <label>
-      <input type="radio" name="period" value="mois" checked /> Mensuel
-    </label>
-    <label>
-      <input type="radio" name="period" value="annee" /> Annuel
-    </label>
-  </div>
+    <header>
+        <h1>🎓 Assistant Rapport de Stage</h1>
+        <p>Remplis les sections, ajoute tes journées et génère ton rapport !</p>
+    </header>
 
-  <form id="budgetForm">
-    <div>
-      <label>Revenu total (€) : <input type="number" id="income" min="0" step="0.01" required /></label>
+    <div class="container">
+        <div class="sidebar">
+            <button class="nav-btn active" onclick="showSection('infos')">1. Informations</button>
+            <button class="nav-btn" onclick="showSection('intro')">2. Introduction</button>
+            <button class="nav-btn" onclick="showSection('entreprise')">3. L'Entreprise</button>
+            <button class="nav-btn" onclick="showSection('journal')">📷 4. Journal & Photos</button>
+            <button class="nav-btn" onclick="showSection('bilan')">5. Bilan & Conclusion</button>
+            <button class="nav-btn" onclick="showSection('export')">💾 Générer le rapport</button>
+        </div>
+
+        <div class="content">
+            
+            <div id="infos" class="section active">
+                <h2>Informations Générales</h2>
+                <div class="tip-box">Ces informations iront sur la page de garde.</div>
+                <label>Ton Nom & Prénom</label>
+                <input type="text" id="studentName" placeholder="Ex: Thomas Martin">
+                <label>Nom de l'Entreprise</label>
+                <input type="text" id="companyName" placeholder="Ex: Garage AutoPlus">
+                <label>Nom du Tuteur</label>
+                <input type="text" id="tutorName" placeholder="Ex: M. Durand">
+            </div>
+
+            <div id="intro" class="section">
+                <h2>Introduction</h2>
+                <div class="tip-box">Pourquoi as-tu choisi ce stage ? Quelles étaient tes attentes ?</div>
+                <textarea id="introText" placeholder="J'ai choisi d'effectuer mon stage chez... car je voulais découvrir le métier de..."></textarea>
+            </div>
+
+            <div id="entreprise" class="section">
+                <h2>L'Entreprise</h2>
+                <div class="tip-box">Que fait l'entreprise ? Combien y a-t-il d'employés ? Qui sont les clients ?</div>
+                <textarea id="companyText" placeholder="L'entreprise est située à... Elle est spécialisée dans la vente de... L'équipe est composée de..."></textarea>
+            </div>
+
+            <div id="journal" class="section">
+                <h2>Journal de bord & Photos</h2>
+                <div class="tip-box">
+                    Raconte tes journées ici. Si tu as pris une photo, décris-la dans la case "Photo". 
+                    Le site créera un repère pour que tu saches où la mettre dans Word.
+                </div>
+
+                <div class="journal-entry-form">
+                    <label style="margin-top:0">Jour / Date</label>
+                    <input type="text" id="dayDate" placeholder="Ex: Lundi 12 Mars">
+                    
+                    <label>Ce que j'ai fait (Activités)</label>
+                    <textarea id="dayActivity" style="height:80px" placeholder="J'ai observé comment on répare... J'ai aidé à ranger..."></textarea>
+                    
+                    <label>📸 As-tu une photo pour illustrer ? (Facultatif)</label>
+                    <input type="text" id="dayPhoto" placeholder="Ex: Photo du moteur démonté">
+                    
+                    <button class="btn-add" onclick="addJournalEntry()">Ajouter cette journée</button>
+                </div>
+
+                <h3>Mes journées enregistrées :</h3>
+                <div id="journalList" class="journal-list">
+                    <p style="color:#9ca3af; font-style:italic;">Aucune journée ajoutée pour l'instant.</p>
+                </div>
+            </div>
+
+            <div id="bilan" class="section">
+                <h2>Bilan & Conclusion</h2>
+                <div class="tip-box">Qu'est-ce que tu as aimé ? Qu'est-ce qui était difficile ? Veux-tu faire ce métier plus tard ?</div>
+                <textarea id="conclusionText" placeholder="Ce stage m'a beaucoup plu car... J'ai appris à être ponctuel et..."></textarea>
+            </div>
+
+            <div id="export" class="section">
+                <h2>Ton Rapport Final</h2>
+                <p>Clique pour tout assembler. Tu verras des balises <strong>[PHOTO]</strong> là où tu dois insérer tes images.</p>
+                <button class="action-btn" onclick="generateReport()">Générer le texte</button>
+                <div id="final-output"></div>
+                <button class="action-btn" onclick="copyText()" style="display:none; margin-top:10px; background-color:#10b981;" id="copyBtn">Copier tout le texte</button>
+            </div>
+
+        </div>
     </div>
 
-    <fieldset>
-      <legend>Dépenses (€)</legend>
-      <label>Logement: <input type="number" name="logement" min="0" step="0.01" value="0" /></label>
-      <label>Alimentation: <input type="number" name="alimentation" min="0" step="0.01" value="0" /></label>
-      <label>Transport: <input type="number" name="transport" min="0" step="0.01" value="0" /></label>
-      <label>Loisirs: <input type="number" name="loisirs" min="0" step="0.01" value="0" /></label>
-      <label>Autres: <input type="number" name="autres" min="0" step="0.01" value="0" /></label>
-    </fieldset>
+    <script>
+        // Stockage des journées
+        let journalEntries = [];
 
-    <button type="submit">Calculer</button>
-  </form>
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            // Trouver l'index du bouton pour le mettre en surbrillance
+            const ids = ['infos', 'intro', 'entreprise', 'journal', 'bilan', 'export'];
+            const index = ids.indexOf(id);
+            if(index !== -1) {
+                document.querySelectorAll('.nav-btn')[index].classList.add('active');
+            }
+        }
+
+        function addJournalEntry() {
+            const date = document.getElementById('dayDate').value;
+            const activity = document.getElementById('dayActivity').value;
+            const photo = document.getElementById('dayPhoto').value;
+
+            if (!date || !activity) {
+                alert("Remplis au moins la date et l'activité !");
+                return;
+            }
+
+            // Ajouter à la liste
+            journalEntries.push({ date, activity, photo });
+
+            // Nettoyer les champs
+            document.getElementById('dayDate').value = "";
+            document.getElementById('dayActivity').value = "";
+            document.getElementById('dayPhoto').value = "";
+
+            renderJournal();
+        }
+
+        function renderJournal() {
+            const list = document.getElementById('journalList');
+            list.innerHTML = "";
+
+            journalEntries.forEach((entry, index) => {
+                let photoHtml = entry.photo ? `<div class="photo-tag">📸 A insérer : ${entry.photo}</div>` : "";
+                
+                list.innerHTML += `
+                    <div class="day-card">
+                        <button class="delete-btn" onclick="deleteEntry(${index})">X</button>
+                        <h4>${entry.date}</h4>
+                        <p>${entry.activity}</p>
+                        ${photoHtml}
+                    </div>
+                `;
+            });
+        }
+
+        function deleteEntry(index) {
+            journalEntries.splice(index, 1);
+            renderJournal();
+        }
+
+        function generateReport() {
+            const name = document.getElementById('studentName').value;
+            const company = document.getElementById('companyName').value;
+            const tutor = document.getElementById('tutorName').value;
+            const intro = document.getElementById('introText').value;
+            const companyDesc = document.getElementById('companyText').value;
+            const conclusion = document.getElementById('conclusionText').value;
+
+            // Formater le journal
+            let journalText = "";
+            journalEntries.forEach(entry => {
+                journalText += `\n📅 ${entry.date.toUpperCase()}\n`;
+                journalText += `-------------------\n`;
+                journalText += `${entry.activity}\n`;
+                if (entry.photo) {
+                    journalText += `\n[ !!! INSÉRER PHOTO ICI : ${entry.photo} !!! ]\n`;
+                }
+                journalText += `\n`;
+            });
+
+            if (journalText === "") journalText = "(Aucune journée enregistrée)";
+
+            const fullText = `
+RAPPORT DE STAGE
+========================================
+Stagiaire : ${name}
+Entreprise : ${company}
+Tuteur : ${tutor}
+========================================
+
+I. INTRODUCTION
+----------------------------------------
+${intro}
+
+II. PRÉSENTATION DE L'ENTREPRISE
+----------------------------------------
+${companyDesc}
+
+III. JOURNAL DE BORD (ACTIVITÉS JOUR PAR JOUR)
+----------------------------------------
+${journalText}
+
+IV. BILAN ET CONCLUSION
+----------------------------------------
+${conclusion}
+            `;
+
+            const outputDiv = document.getElementById('final-output');
+            outputDiv.innerText = fullText;
+            outputDiv.style.display = 'block';
+            document.getElementById('copyBtn').style.display = 'inline-block';
+        }
+
+        function copyText() {
+            const text = document.getElementById('final-output').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Texte copié ! Colle-le dans Word et remplace les balises [PHOTO] par tes images.");
+            });
+        }
+    </script>
+</body>
+</html>
 
   <section id="results" style="display:none;">
     <h2>Résultats</h2>
