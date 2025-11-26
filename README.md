@@ -1,3 +1,6 @@
+## Voir le site
+
+> [[https://poakolu.github.io/stage/](https://poakolu.github.io/stage/)
 # 🎓 Assistant Rapport de Stage (HTML/CSS/JS)
 
 Cet outil simple, développé en HTML, CSS et JavaScript pur, a été créé pour structurer et rédiger facilement un rapport de stage.
